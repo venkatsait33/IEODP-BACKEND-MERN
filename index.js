@@ -39,14 +39,30 @@ app.get("/", (req, res) => {
   res.send("Hello World!");
 });
 
-app.get("/home", (req, res) => {
+app.get("/api/health", (req, res) => {
   res.status(200).json({
-    message: "I am coming from backend",
-    success: true,
+    status: "OK",
+    message: "Backend is running",
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-  connectDB();
-});
+// Start server function
+const startServer = async () => {
+  try {
+    if (!process.env.MONGO_URI) {
+      throw new Error("❌ MONGO_URI is missing");
+    }
+
+    await connectDB();
+
+    const PORT = process.env.PORT || 5000;
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error("❌ Server startup failed:", error.message);
+    process.exit(1);
+  }
+};
+
+startServer();
