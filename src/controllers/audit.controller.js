@@ -4,8 +4,8 @@ import { TicketAction } from "../model/ticketAction.model.js";
 import connectDB from "../db/db.js";
 
 export const getAuditLogsByTicketId = async (req, res) => {
-  const { ticketId } = req.params;
   await connectDB();
+  const { ticketId } = req.params;
 
   // ✅ Validate ObjectId
   if (!mongoose.Types.ObjectId.isValid(ticketId)) {
@@ -31,6 +31,7 @@ export const getAuditLogsByTicketId = async (req, res) => {
 };
 
 export const getAuditLogAll = async (req, res) => {
+  await connectDB();
   const auditLogs = await TicketAction.find()
     .populate("performedBy", "userName email role")
     .sort({ createdAt: 1 }); // chronological order

@@ -4,8 +4,8 @@ import { User } from "../model/user.model.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 export const getAllUsers = asyncHandler(async (req, res, next) => {
-  const { _id, role } = req.user;
   await connectDB();
+  const { _id, role } = req.user;
 
   if (role !== "admin") {
     return res.status(403).json({
@@ -24,8 +24,8 @@ export const getAllUsers = asyncHandler(async (req, res, next) => {
 });
 
 export const changeUserStatus = asyncHandler(async (req, res, next) => {
-  const { role } = req.user;
   await connectDB();
+  const { role } = req.user;
   const id = req.params.id;
   const { accountStatus } = req.body;
 

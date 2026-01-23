@@ -24,6 +24,7 @@ import connectDB from "../db/db.js";
 // };
 
 export const createTicket = async (req, res) => {
+  await connectDB();
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -117,6 +118,7 @@ export const getTicketsByRole = asyncHandler(async (req, res) => {
 });
 
 export const getTicketById = asyncHandler(async (req, res) => {
+  await connectDB();
   const ticket = await Ticket.findById(req.params.id).populate(
     "raisedBy",
     "userName role",
@@ -134,6 +136,7 @@ export const getTicketById = asyncHandler(async (req, res) => {
 });
 
 export const addTicketAction = async (req, res) => {
+  await connectDB();
   const session = await mongoose.startSession();
   session.startTransaction();
 

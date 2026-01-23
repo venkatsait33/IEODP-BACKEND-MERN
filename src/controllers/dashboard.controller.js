@@ -1,4 +1,5 @@
 import { getDashboardConfigByRole } from "../config/dashboard.config.js";
+import connectDB from "../db/db.js";
 import { Ticket } from "../model/ticket.model.js";
 import { User } from "../model/user.model.js";
 
@@ -7,6 +8,7 @@ import { User } from "../model/user.model.js";
  * Role-aware dashboard data provider
  */
 export const getDashboardData = async (req, res) => {
+  await connectDB();
   try {
     const { role } = req.user;
 

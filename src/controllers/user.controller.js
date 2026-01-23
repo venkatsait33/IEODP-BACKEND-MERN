@@ -9,6 +9,7 @@ import connectDB from "../db/db.js";
 dotenv.config();
 
 export const createUser = asyncHandler(async (req, res) => {
+  await connectDB();
   const {
     userName,
     firstName,
@@ -18,8 +19,6 @@ export const createUser = asyncHandler(async (req, res) => {
     mobileNumber,
     gender,
   } = req.body;
-  await connectDB();
-
   if (
     !userName ||
     !firstName ||
@@ -70,8 +69,8 @@ export const createUser = asyncHandler(async (req, res) => {
 });
 
 export const login = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
   await connectDB();
+  const { email, password } = req.body;
 
   // Validation
   if (!email || !password) {
@@ -137,8 +136,8 @@ export const login = asyncHandler(async (req, res) => {
 });
 
 export const sendRestOtp = async (req, res) => {
-  const { email } = req.body;
   await connectDB();
+  const { email } = req.body;
   if (!email) {
     return res
       .status(400)
@@ -184,8 +183,8 @@ export const sendRestOtp = async (req, res) => {
 };
 
 export const userRestPassword = async (req, res) => {
-  const { email, otp, password } = req.body;
   await connectDB();
+  const { email, otp, password } = req.body;
   if (!email || !otp || !password) {
     return res
       .status(400)
