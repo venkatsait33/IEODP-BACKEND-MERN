@@ -122,7 +122,8 @@ export const login = asyncHandler(async (req, res) => {
     .cookie("token", token, {
       maxAge: 24 * 60 * 60 * 1000,
       httpOnly: true,
-      sameSite: "strict",
+      secure: true,        // 🔥 REQUIRED on Vercel
+  sameSite: "none"     // 🔥 REQUIRED for cross-site
     })
     .json({
       message: "Login successful",
