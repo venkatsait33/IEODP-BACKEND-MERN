@@ -1,9 +1,11 @@
+import connectDB from "../db/db.js";
 import { AuditLog } from "../model/auditLog.model.js";
 import { User } from "../model/user.model.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 
 export const getAllUsers = asyncHandler(async (req, res, next) => {
   const { _id, role } = req.user;
+  await connectDB();
 
   if (role !== "admin") {
     return res.status(403).json({
@@ -23,6 +25,7 @@ export const getAllUsers = asyncHandler(async (req, res, next) => {
 
 export const changeUserStatus = asyncHandler(async (req, res, next) => {
   const { role } = req.user;
+  await connectDB();
   const id = req.params.id;
   const { accountStatus } = req.body;
 
@@ -56,6 +59,7 @@ export const changeUserStatus = asyncHandler(async (req, res, next) => {
  * PATCH /api/admin/users/:id/assign-role
  */
 export const assignUserRole = async (req, res) => {
+  await connectDB();
   try {
     const adminRole = req.user.role;
     const { role, accountStatus } = req.body; // ✅ FROM BODY

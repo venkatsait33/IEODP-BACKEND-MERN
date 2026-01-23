@@ -18,6 +18,7 @@ export const createUser = asyncHandler(async (req, res) => {
     mobileNumber,
     gender,
   } = req.body;
+  await connectDB();
 
   if (
     !userName ||
@@ -137,6 +138,7 @@ export const login = asyncHandler(async (req, res) => {
 
 export const sendRestOtp = async (req, res) => {
   const { email } = req.body;
+  await connectDB();
   if (!email) {
     return res
       .status(400)
@@ -183,6 +185,7 @@ export const sendRestOtp = async (req, res) => {
 
 export const userRestPassword = async (req, res) => {
   const { email, otp, password } = req.body;
+  await connectDB();
   if (!email || !otp || !password) {
     return res
       .status(400)

@@ -1,9 +1,11 @@
 import mongoose from "mongoose";
 import { Ticket } from "../model/ticket.model.js";
 import { TicketAction } from "../model/ticketAction.model.js";
+import connectDB from "../db/db.js";
 
 export const getAuditLogsByTicketId = async (req, res) => {
   const { ticketId } = req.params;
+  await connectDB();
 
   // ✅ Validate ObjectId
   if (!mongoose.Types.ObjectId.isValid(ticketId)) {

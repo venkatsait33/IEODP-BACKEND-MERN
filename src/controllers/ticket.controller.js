@@ -4,6 +4,7 @@ import { TicketAction } from "../model/ticketAction.model.js";
 import { createAuditLog } from "../utils/createAuditLog.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { validateWorkflowAction } from "../utils/validateWorkflowAction.js";
+import connectDB from "../db/db.js";
 
 // export const createTicket = async (req, res) => {
 //   const ticket = await Ticket.create({
@@ -77,6 +78,7 @@ export const createTicket = async (req, res) => {
 };
 
 export const getTickets = async (req, res) => {
+  await connectDB();
   const page = Number(req.query.page) || 1;
   const limit = Number(req.query.limit) || 10;
   const skip = (page - 1) * limit;
@@ -100,6 +102,7 @@ export const getTickets = async (req, res) => {
 
 export const getTicketsByRole = asyncHandler(async (req, res) => {
   const query = {};
+  await connectDB();
 
   // 🔐 Operator sees only own tickets
   if (req.user.role === "operator") {
