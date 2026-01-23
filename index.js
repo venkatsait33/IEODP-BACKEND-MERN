@@ -42,9 +42,6 @@ app.use(
   }),
 );
 
-/* 🔥 HANDLE PREFLIGHT */
-app.options("*", cors());
-
 /* ---------------- ROUTES ---------------- */
 app.use("/api/v1/auth", userRoutes);
 app.use("/api/v1/ticket", ticketRoutes);
