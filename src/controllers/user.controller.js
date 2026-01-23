@@ -5,6 +5,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { PASSWORD_RESET_TEMPLATE } from "../utils/emailTemplates.js";
 import { transporter } from "../utils/nodemailer.js";
 import dotenv from "dotenv";
+import connectDB from "../db/db.js";
 dotenv.config();
 
 export const createUser = asyncHandler(async (req, res) => {
@@ -69,6 +70,7 @@ export const createUser = asyncHandler(async (req, res) => {
 
 export const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
+  await connectDB();
 
   // Validation
   if (!email || !password) {

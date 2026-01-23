@@ -3,14 +3,13 @@ import bodyParser from "body-parser";
 import cors from "cors";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
-
-import connectDB from "./src/db/db.js";
 import userRoutes from "./src/routes/user.routes.js";
 import ticketRoutes from "./src/routes/ticket.routes.js";
 import auditRoutes from "./src/routes/audit.routes.js";
 import adminRoutes from "./src/routes/admin.routes.js";
 import dashboardData from "./src/routes/dashboard.routes.js";
 import { errorHandler } from "./src/utils/errorHandler.js";
+import connectDB from "./src/db/db.js";
 
 dotenv.config();
 
