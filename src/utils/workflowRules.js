@@ -21,8 +21,11 @@ export const WORKFLOW_RULES = {
   },
 
   REVERIFY: {
-    allowedRoles: ["operator", "leadership", "management"],
-    allowedActions: ["REVERIFY_RESPONSE"],
-    nextStatus: "FORWARDED_TO_MANAGEMENT",
+    allowedRoles: ["operator", "leadership", "management", "auditor"],
+    allowedActions: [
+      "REVERIFY_RESPONSE",
+      "AUDITOR_APPROVED",
+      "AUDITOR_REJECTED",
+    ],
   },
 };

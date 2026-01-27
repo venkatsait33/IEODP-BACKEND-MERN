@@ -142,15 +142,33 @@ export const addTicketAction = async (req, res) => {
 
   try {
     const { actionType, comment } = req.body;
+    const ticketId = req.params.id;
 
-    const ticket = await Ticket.findById(req.params.id).session(session);
+    const REQUIRED_REVERIFY_ROLES = ["operator", "leadership", "management"];
+
+    const ticket = await Ticket.findById(ticketId).session(session);
     if (!ticket) {
       await session.abortTransaction();
       return res.status(404).json({ message: "Ticket not found" });
     }
 
-    // ✅ Validate workflow rules
-    const rule = validateWorkflowAction({
+    // -------------------------
+    // Helper: verify all roles responded
+    // -------------------------
+    const hasAllReverifyResponses = async () => {
+      const actions = await TicketAction.find({
+        ticketId,
+        actionType: "REVERIFY_RESPONSE",
+      }).session(session);
+
+      const respondedRoles = new Set(actions.map((a) => a.role));
+      return REQUIRED_REVERIFY_ROLES.every((r) => respondedRoles.has(r));
+    };
+
+    // -------------------------
+    // Validate workflow
+    // -------------------------
+    validateWorkflowAction({
       ticketStatus: ticket.status,
       userRole: req.user.role,
       actionType,
@@ -160,7 +178,22 @@ export const addTicketAction = async (req, res) => {
     let nextStatus = previousStatus;
     let auditorDecision = null;
 
-    // ✅ Auditor actions
+    // -------------------------
+    // Auditor logic
+    // -------------------------
+    if (
+      req.user.role === "auditor" &&
+      ["AUDITOR_APPROVED", "AUDITOR_REJECTED"].includes(actionType) &&
+      ticket.status === "REVERIFY"
+    ) {
+      const isComplete = await hasAllReverifyResponses(ticket._id);
+
+      if (!isComplete) {
+        throw new Error(
+          "Reverify responses pending. Auditor cannot finalize yet.",
+        );
+      }
+    }
     if (actionType === "AUDITOR_APPROVED") {
       nextStatus = "CLOSED";
       auditorDecision = "APPROVED";
@@ -171,27 +204,44 @@ export const addTicketAction = async (req, res) => {
       auditorDecision = "REJECTED";
     }
 
+    // -------------------------
+    // Auditor triggers REVERIFY
+    // -------------------------
     if (actionType === "AUDITOR_REVERIFY") {
       nextStatus = "REVERIFY";
       auditorDecision = "REVERIFY";
     }
 
-    // ✅ Other workflow transitions
-    if (rule.nextStatus && previousStatus === ticket.status) {
-      nextStatus = rule.nextStatus;
+    // -------------------------
+    // Prevent auto-forward on REVERIFY_RESPONSE
+    // -------------------------
+    if (actionType !== "REVERIFY_RESPONSE") {
+      const rule = validateWorkflowAction({
+        ticketStatus: ticket.status,
+        userRole: req.user.role,
+        actionType,
+      });
+
+      if (rule?.nextStatus) {
+        nextStatus = rule.nextStatus;
+      }
     }
 
-    // ✅ Update ticket
+    // -------------------------
+    // Persist ticket
+    // -------------------------
     ticket.status = nextStatus;
     if (auditorDecision) ticket.auditorDecision = auditorDecision;
 
     await ticket.save({ session });
 
-    // ✅ Ticket timeline (workflow history)
+    // -------------------------
+    // Timeline
+    // -------------------------
     await TicketAction.create(
       [
         {
-          ticketId: ticket._id,
+          ticketId,
           performedBy: req.user._id,
           role: req.user.role,
           actionType,
@@ -203,20 +253,19 @@ export const addTicketAction = async (req, res) => {
       { session },
     );
 
-    // ✅ Audit log (enterprise-grade)
+    // -------------------------
+    // Audit log
+    // -------------------------
     await createAuditLog({
       session,
       entity: "TICKET",
-      entityId: ticket._id,
+      entityId: ticketId,
       action: actionType,
       performedBy: req.user._id,
       role: req.user.role,
       previousState: previousStatus,
       newState: nextStatus,
-      metadata: {
-        comment,
-        auditorDecision,
-      },
+      metadata: { comment, auditorDecision },
     });
 
     await session.commitTransaction();
@@ -226,7 +275,6 @@ export const addTicketAction = async (req, res) => {
   } catch (err) {
     await session.abortTransaction();
     session.endSession();
-
     res.status(403).json({ message: err.message });
   }
 };
