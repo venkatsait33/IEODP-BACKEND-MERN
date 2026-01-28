@@ -42,6 +42,12 @@ const ticketSchema = new mongoose.Schema(
       enum: ["APPROVED", "REJECTED", "REVERIFY"],
       default: null,
     },
+    tags: {
+      type: [String],
+      lowercase: true,
+      trim: true,
+      index: true,
+    },
   },
   { timestamps: true },
 );
