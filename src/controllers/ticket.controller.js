@@ -5,6 +5,7 @@ import { createAuditLog } from "../utils/createAuditLog.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { validateWorkflowAction } from "../utils/validateWorkflowAction.js";
 import connectDB from "../db/db.js";
+import { User } from "../model/user.model.js";
 
 // export const createTicket = async (req, res) => {
 //   const ticket = await Ticket.create({
@@ -49,8 +50,20 @@ export const createTicket = async (req, res) => {
           raisedBy: req.user._id,
           status: "SUBMITTED",
           tags: normalizedTags,
+          assignedTo: {
+            operator: req.user._id,
+          },
         },
       ],
+      { session },
+    );
+
+    await User.findByIdAndUpdate(
+      req.user._id,
+      {
+        $inc: { activeTickets: 1 },
+        $addToSet: { assignedTickets: ticket[0]._id },
+      },
       { session },
     );
 
@@ -139,10 +152,12 @@ export const getTicketsByRole = asyncHandler(async (req, res) => {
 
 export const getTicketById = asyncHandler(async (req, res) => {
   await connectDB();
-  const ticket = await Ticket.findById(req.params.id).populate(
-    "raisedBy",
-    "userName role",
-  );
+  const ticket = await Ticket.findById(req.params.id)
+    .populate("raisedBy", "userName role")
+    .populate(
+      "assignedTo.leadership assignedTo.management auditor",
+      "userName role email",
+    );
 
   if (!ticket) {
     return res.status(404).json({ message: "Ticket not found" });
@@ -170,6 +185,29 @@ export const addTicketAction = async (req, res) => {
     if (!ticket) {
       await session.abortTransaction();
       return res.status(404).json({ message: "Ticket not found" });
+    }
+
+    // -------------------------
+    // Assignment validation
+    // -------------------------
+    if (req.user.role === "auditor") {
+      if (!ticket.auditor) {
+        throw new Error("Auditor is not assigned to this ticket");
+      }
+
+      if (ticket.auditor.toString() !== req.user._id.toString()) {
+        throw new Error("You are not assigned as auditor for this ticket");
+      }
+    } else {
+      if (!ticket.assignedTo?.[req.user.role]) {
+        throw new Error("Ticket is not assigned yet");
+      }
+
+      if (
+        ticket.assignedTo[req.user.role].toString() !== req.user._id.toString()
+      ) {
+        throw new Error("You are not assigned to this ticket");
+      }
     }
 
     // -------------------------
@@ -253,6 +291,19 @@ export const addTicketAction = async (req, res) => {
     ticket.status = nextStatus;
     if (auditorDecision) ticket.auditorDecision = auditorDecision;
 
+    if (["CLOSED", "REJECTED"].includes(nextStatus)) {
+      const assignedUsers = Object.values(ticket.assignedTo).filter(Boolean);
+
+      await User.updateMany(
+        { _id: { $in: assignedUsers } },
+        {
+          $inc: { activeTickets: -1 },
+          $pull: { assignedTickets: ticket._id },
+        },
+        { session },
+      );
+    }
+
     await ticket.save({ session });
 
     // -------------------------
@@ -296,5 +347,111 @@ export const addTicketAction = async (req, res) => {
     await session.abortTransaction();
     session.endSession();
     res.status(403).json({ message: err.message });
+  }
+};
+
+export const assignTicketUser = async (req, res) => {
+  await connectDB();
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const { roleToAssign, userId } = req.body;
+    const ticketId = req.params.id;
+
+    if (!roleToAssign || !userId) {
+      throw new Error("roleToAssign and userId are required");
+    }
+
+    const normalizedRole = roleToAssign.toLowerCase();
+
+    const user = await User.findById(userId).session(session);
+    if (!user) throw new Error("User not found");
+
+    const ticket = await Ticket.findById(ticketId).session(session);
+    if (!ticket) throw new Error("Ticket not found");
+
+    // 🧠 AUDITOR ASSIGNMENT (TRACKING ONLY)
+    if (normalizedRole === "auditor") {
+      if (user.role !== "auditor") {
+        throw new Error("User is not an auditor");
+      }
+
+      ticket.auditor = userId;
+      await ticket.save({ session });
+
+      await createAuditLog({
+        session,
+        entity: "TICKET",
+        entityId: ticket._id,
+        action: "AUDITOR_ASSIGNED",
+        performedBy: req.user._id,
+        role: "auditor",
+        metadata: { auditor: userId },
+      });
+
+      await session.commitTransaction();
+      return res.json({ success: true, role: "auditor" });
+    }
+
+    // 🧠 ACTION ROLES
+    const ACTION_ROLES = ["operator", "leadership", "management"];
+    if (!ACTION_ROLES.includes(normalizedRole)) {
+      throw new Error("Invalid role to assign");
+    }
+
+    if (user.role !== normalizedRole) {
+      throw new Error(`User role mismatch`);
+    }
+
+    if (!ticket.assignedTo) ticket.assignedTo = {};
+
+    const previousUserId = ticket.assignedTo[normalizedRole];
+
+    ticket.assignedTo[normalizedRole] = userId;
+    await ticket.save({ session });
+
+    // 🔻 previous user
+    if (previousUserId && previousUserId.toString() !== userId) {
+      await User.findByIdAndUpdate(
+        previousUserId,
+        {
+          $inc: { activeTickets: -1 },
+          $pull: { assignedTickets: ticket._id },
+        },
+        { session },
+      );
+    }
+
+    // 🔺 new user
+    await User.findByIdAndUpdate(
+      userId,
+      {
+        $inc: { activeTickets: 1 },
+        $addToSet: { assignedTickets: ticket._id },
+      },
+      { session },
+    );
+
+    await createAuditLog({
+      session,
+      entity: "TICKET",
+      entityId: ticket._id,
+      action: "TICKET_ASSIGNED",
+      performedBy: req.user._id,
+      role: normalizedRole,
+      metadata: {
+        roleAssigned: normalizedRole,
+        to: userId,
+      },
+    });
+
+    await session.commitTransaction();
+    res.json({ success: true, role: normalizedRole });
+  } catch (err) {
+    await session.abortTransaction();
+    res.status(400).json({ message: err.message });
+  } finally {
+    session.endSession();
   }
 };

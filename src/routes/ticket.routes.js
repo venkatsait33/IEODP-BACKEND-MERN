@@ -1,6 +1,7 @@
 import express from "express";
 import {
   addTicketAction,
+  assignTicketUser,
   createTicket,
   getTicketById,
   getTickets,
@@ -25,4 +26,5 @@ routes.post(
   addTicketAction,
 );
 
+routes.patch("/:id/assign", isAuthenticated, assignTicketUser);
 export default routes;

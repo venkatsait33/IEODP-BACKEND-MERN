@@ -17,7 +17,8 @@
     "jsonwebtoken": "^9.0.3",
     "mongodb": "^7.0.0",
     "mongoose": "^9.1.4",
-    "nodemailer": "^7.0.12"
+    "nodemailer": "^7.0.12",
+    "resend": "^6.9.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.11"

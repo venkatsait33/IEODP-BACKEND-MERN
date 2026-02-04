@@ -31,6 +31,7 @@ const ticketActionSchema = new mongoose.Schema(
         "AUDITOR_REJECTED",
         "AUDITOR_REVERIFY",
         "REVERIFY_RESPONSE",
+        "TICKET_ASSIGNED",
       ],
       required: true,
     },

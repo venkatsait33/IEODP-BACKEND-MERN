@@ -37,6 +37,17 @@ const ticketSchema = new mongoose.Schema(
       required: true,
     },
 
+    assignedTo: {
+      operator: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+      leadership: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+      management: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    },
+
+    auditor: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+
     auditorDecision: {
       type: String,
       enum: ["APPROVED", "REJECTED", "REVERIFY"],

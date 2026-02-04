@@ -5,8 +5,11 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { PASSWORD_RESET_TEMPLATE } from "../utils/emailTemplates.js";
 import { transporter } from "../utils/nodemailer.js";
 import dotenv from "dotenv";
+import { Resend } from "resend";
 import connectDB from "../db/db.js";
 dotenv.config();
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const createUser = asyncHandler(async (req, res) => {
   await connectDB();
@@ -48,16 +51,14 @@ export const createUser = asyncHandler(async (req, res) => {
     profile: [{ gender }],
   };
 
-  const mailOptions = {
-    from: process.env.SENDER_EMAIL,
+  await resend.emails.send({
+    from: "Acme <onboarding@resend.dev>",
     to: email,
     subject: "Welcome to IEODP platform",
     html: `<h1>Welcome to our platform</h1> <p>Thank you for joining our platform. We hope you enjoy your experience with us .</p>
             <p> Your account has been created with email id: ${email}
             </p>`,
-  };
-
-  await transporter.sendMail(mailOptions);
+  });
 
   const userCreate = await User.create(userData);
 
@@ -157,18 +158,28 @@ export const sendRestOtp = async (req, res) => {
 
     await user.save();
 
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: user.email,
+    await resend.emails.send({
+      from: "Test <onboarding@resend.dev>",
+      to: "venkatsait33@gmail.com",
       subject: "Password Rest OTP ",
       html: PASSWORD_RESET_TEMPLATE.replace("{{otp}}", otp).replace(
         "{{email}}",
         user.email,
       ),
-      // `<p>Your OTP for resetting your password is: ${otp}</p> <p>This OTP will expire in 15 minutes</p>`
-    };
+    });
 
-    await transporter.sendMail(mailOptions);
+    // const mailOptions = {
+    //   from: process.env.EMAIL_USER,
+    //   to: user.email,
+    //   subject: "Password Rest OTP ",
+    //   html: PASSWORD_RESET_TEMPLATE.replace("{{otp}}", otp).replace(
+    //     "{{email}}",
+    //     user.email,
+    //   ),
+    //   // `<p>Your OTP for resetting your password is: ${otp}</p> <p>This OTP will expire in 15 minutes</p>`
+    // };
+
+    // await transporter.sendMail(mailOptions);
     res.status(200).json({
       success: true,
       message: "OTP sent to your email",
@@ -229,4 +240,19 @@ export const userRestPassword = async (req, res) => {
       success: false,
     });
   }
+};
+
+export const getAssignableUsers = async (req, res) => {
+  const { role } = req.query;
+  if (!role) {
+    return res.status(400).json({ message: "Role is required" });
+  }
+
+  const users = await User.find({
+    role: role.toLowerCase(),
+    accountStatus: "active",
+  })
+    .select("userName role activeTickets")
+    .sort({ activeTickets: 1 });
+  res.json(users);
 };

@@ -33,20 +33,21 @@ const UserSchema = mongoose.Schema(
       photo: {
         type: String,
       },
+      mobileNumber: {
+        type: Number,
+      },
     },
     role: {
       type: String,
       enum: ["operator", "admin", "leadership", "management", "auditor"],
       default: "operator",
     },
-    mobileNumber: {
-      type: Number,
-    },
+
     accountStatus: {
       type: String,
       enum: ["active", "inactive", "pending", "suspended"],
       default: "active",
-    }, 
+    },
     resetPasswordOtp: {
       type: String,
       default: "",
@@ -55,6 +56,17 @@ const UserSchema = mongoose.Schema(
       type: Number,
       default: 0,
     },
+    activeTickets: {
+      type: Number,
+      default: 0,
+      index: true,
+    },
+    assignedTickets: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Ticket",
+      },
+    ],
   },
   { timestamps: true },
 );
