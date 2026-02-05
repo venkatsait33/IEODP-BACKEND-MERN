@@ -34,6 +34,7 @@ export const createTicket = async (req, res) => {
       title,
       description,
       priority,
+      category,
       tags = [], // ✅ NEW
     } = req.body;
 
@@ -47,6 +48,7 @@ export const createTicket = async (req, res) => {
           title: title,
           description: description,
           priority: priority,
+          category: category,
           raisedBy: req.user._id,
           status: "SUBMITTED",
           tags: normalizedTags,
@@ -115,6 +117,7 @@ export const getTickets = async (req, res) => {
 
   if (req.query.status) query.status = req.query.status;
   if (req.query.priority) query.priority = req.query.priority;
+  if (req.query.category) query.category = req.query.category;
 
   if (req.query.search) {
     query.title = { $regex: req.query.search, $options: "i" };

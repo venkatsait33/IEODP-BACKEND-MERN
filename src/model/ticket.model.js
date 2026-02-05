@@ -59,6 +59,10 @@ const ticketSchema = new mongoose.Schema(
       trim: true,
       index: true,
     },
+    category: {
+      type: String,
+      required: true,
+    },
   },
   { timestamps: true },
 );
