@@ -9,6 +9,8 @@ import {
 } from "../controllers/ticket.controller.js";
 import { isAuthenticated } from "../middleware/isAuthenticated.js";
 import { idempotencyMiddleware } from "../middleware/idempotency.js";
+import { throttleRequests } from "../middleware/throttle.js";
+// import { userLimiter } from "../middleware/rateLimiter.js";
 
 const routes = express.Router();
 
@@ -23,6 +25,7 @@ routes.post(
   "/:id/action",
   isAuthenticated,
   idempotencyMiddleware,
+  throttleRequests,
   addTicketAction,
 );
 

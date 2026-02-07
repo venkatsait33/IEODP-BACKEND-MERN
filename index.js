@@ -10,6 +10,8 @@ import adminRoutes from "./src/routes/admin.routes.js";
 import dashboardData from "./src/routes/dashboard.routes.js";
 import { errorHandler } from "./src/utils/errorHandler.js";
 import connectDB from "./src/db/db.js";
+import { globalLimiter } from "./src/middleware/rateLimiter.js";
+import helmet from "helmet";
 
 dotenv.config();
 
@@ -41,7 +43,14 @@ app.use(
   }),
 );
 
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+  }),
+);
+
 /* ---------------- ROUTES ---------------- */
+app.use("/api", globalLimiter);
 app.use("/api/v1/auth", userRoutes);
 app.use("/api/v1/ticket", ticketRoutes);
 app.use("/api/v1/audit", auditRoutes);
