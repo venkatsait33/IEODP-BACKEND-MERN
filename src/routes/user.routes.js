@@ -2,6 +2,7 @@ import express from "express";
 import {
   createUser,
   getAssignableUsers,
+  getUserById,
   login,
   sendRestOtp,
   userRestPassword,
@@ -23,5 +24,7 @@ router.get(
   authorizeRoles("admin", "leadership", "management"),
   getAssignableUsers,
 );
+
+router.get("/:id", getUserById);
 
 export default router;

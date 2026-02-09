@@ -47,8 +47,7 @@ export const createUser = asyncHandler(async (req, res) => {
     lastName,
     email,
     password: hashPassword,
-    mobileNumber,
-    profile: [{ gender }],
+    profile: { gender: gender, mobileNumber: mobileNumber, photo: " " },
   };
 
   await resend.emails.send({
@@ -135,6 +134,19 @@ export const login = asyncHandler(async (req, res) => {
       token,
     });
 });
+
+export const getUserById = async (req, res) => {
+  const userId = req.params.id;
+  try {
+    const user = await User.findById(userId).select("-password");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    return res.status(200).json(user);
+  } catch (error) {
+    return res.status(500).json({ message: "Error retrieving user" });
+  }
+};
 
 export const sendRestOtp = async (req, res) => {
   await connectDB();
